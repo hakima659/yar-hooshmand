@@ -1,1 +1,589 @@
 
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>یار هوشمند فارسی | ابزارهای هوش مصنوعی</title>
+
+  <meta name="description"
+        content="یار هوشمند فارسی؛ دستیار هوش مصنوعی برای نوشتن، ترجمه، خلاصه‌سازی، تصحیح و تبدیل تصویر به متن.">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Tahoma, Arial, sans-serif;
+      background: #f5f7fb;
+      color: #172033;
+      line-height: 1.8;
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav {
+      max-width: 1150px;
+      margin: auto;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .logo {
+      font-size: 23px;
+      font-weight: bold;
+      color: #2563eb;
+    }
+
+    .nav button {
+      border: 0;
+      background: #2563eb;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .hero {
+      max-width: 1000px;
+      margin: auto;
+      padding: 60px 20px 35px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 38px;
+      margin-bottom: 15px;
+    }
+
+    .hero h1 span {
+      color: #2563eb;
+    }
+
+    .hero p {
+      color: #64748b;
+      font-size: 17px;
+      max-width: 720px;
+      margin: auto;
+    }
+
+    .container {
+      max-width: 1150px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .section-title {
+      text-align: center;
+      margin: 35px 0 20px;
+      font-size: 25px;
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+    }
+
+    .tool {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 15px;
+      padding: 22px 15px;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .tool:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+
+    .tool .icon {
+      font-size: 35px;
+      margin-bottom: 8px;
+    }
+
+    .tool h3 {
+      font-size: 17px;
+      margin-bottom: 5px;
+    }
+
+    .tool p {
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .chat {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 20px;
+      margin-top: 25px;
+    }
+
+    .chat-title {
+      font-size: 21px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    #messages {
+      min-height: 120px;
+      max-height: 400px;
+      overflow-y: auto;
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .message {
+      padding: 10px 13px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      background: #dbeafe;
+    }
+
+    .bot {
+      background: #e2e8f0;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 13px;
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: #2563eb;
+    }
+
+    .send {
+      width: 100%;
+      margin-top: 10px;
+      border: 0;
+      background: #2563eb;
+      color: white;
+      padding: 13px;
+      border-radius: 11px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .plans {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .plan {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 25px;
+      text-align: center;
+    }
+
+    .plan h3 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    .price {
+      font-size: 27px;
+      font-weight: bold;
+      color: #2563eb;
+      margin: 10px 0 15px;
+    }
+
+    .plan ul {
+      list-style: none;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+
+    .plan li {
+      margin: 7px 0;
+    }
+
+    .plan button {
+      width: 100%;
+      border: 0;
+      padding: 11px;
+      border-radius: 10px;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .special {
+      border: 2px solid #2563eb;
+    }
+
+    footer {
+      text-align: center;
+      color: #64748b;
+      padding: 40px 20px;
+      margin-top: 30px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: white;
+      width: 100%;
+      max-width: 430px;
+      border-radius: 18px;
+      padding: 25px;
+    }
+
+    .modal-box h2 {
+      margin-bottom: 15px;
+    }
+
+    .modal-box input {
+      width: 100%;
+      padding: 12px;
+      margin: 7px 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-family: inherit;
+    }
+
+    .modal-box button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 10px;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .close {
+      background: #64748b !important;
+    }
+
+    @media (max-width: 600px) {
+      .hero h1 {
+        font-size: 29px;
+      }
+
+      .hero {
+        padding-top: 40px;
+      }
+
+      .nav {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="nav">
+    <div class="logo">🤖 یار هوشمند</div>
+    <button onclick="openLogin()">ورود / ثبت‌نام</button>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>دستیار <span>هوشمند فارسی</span></h1>
+  <p>
+    مجموعه‌ای از ابزارهای هوش مصنوعی برای نوشتن، ترجمه،
+    خلاصه‌سازی، تصحیح متن و تبدیل تصویر به متن.
+  </p>
+</section>
+
+<main class="container">
+
+  <h2 class="section-title">🧠 ابزارهای هوشمند</h2>
+
+  <div class="tools">
+
+    <div class="tool" onclick="selectTool('دستیار هوش مصنوعی')">
+      <div class="icon">🤖</div>
+      <h3>دستیار هوش مصنوعی</h3>
+      <p>پاسخ به پرسش‌های شما</p>
+    </div>
+
+    <div class="tool" onclick="selectTool('تولید متن')">
+      <div class="icon">✍️</div>
+      <h3>تولید متن</h3>
+      <p>نوشتن متن با هوش مصنوعی</p>
+    </div>
+
+    <div class="tool" onclick="selectTool('تصحیح متن')">
+      <div class="icon">📝</div>
+      <h3>تصحیح متن</h3>
+      <p>اصلاح و بهتر کردن نوشته</p>
+    </div>
+
+    <div class="tool" onclick="selectTool('خلاصه سازی')">
+      <div class="icon">📚</div>
+      <h3>خلاصه‌سازی</h3>
+      <p>خلاصه کردن متن‌های طولانی</p>
+    </div>
+
+    <div class="tool" onclick="selectTool('ترجمه')">
+      <div class="icon">🌍</div>
+      <h3>ترجمه</h3>
+      <p>ترجمه متن به زبان‌های مختلف</p>
+    </div>
+
+    <div class="tool" onclick="selectTool('تبدیل تصویر به متن')">
+      <div class="icon">📷</div>
+      <h3>تصویر به متن</h3>
+      <p>استخراج نوشته از عکس</p>
+    </div>
+
+  </div>
+
+  <section class="chat">
+
+    <div class="chat-title">
+      💬 دستیار هوشمند
+    </div>
+
+    <div id="messages">
+      <div class="message bot">
+        سلام 👋 من یار هوشمند هستم. چه کمکی می‌توانم به شما بکنم؟
+      </div>
+    </div>
+
+    <textarea
+      id="prompt"
+      placeholder="پیام خود را اینجا بنویسید..."
+    ></textarea>
+
+    <button class="send" onclick="sendMessage()">
+      🚀 ارسال پیام
+    </button>
+
+  </section>
+
+  <h2 class="section-title">💎 پلن‌های اشتراک</h2>
+
+  <div class="plans">
+
+    <div class="plan">
+      <h3>رایگان</h3>
+      <div class="price">۰ تومان</div>
+      <ul>
+        <li>✓ استفاده محدود</li>
+        <li>✓ ابزارهای پایه</li>
+        <li>✓ دستیار هوشمند</li>
+      </ul>
+      <button onclick="choosePlan('رایگان')">
+        شروع رایگان
+      </button>
+    </div>
+
+    <div class="plan">
+      <h3>حرفه‌ای</h3>
+      <div class="price">۳۹۹,۰۰۰ تومان</div>
+      <ul>
+        <li>✓ استفاده بیشتر</li>
+        <li>✓ تولید متن</li>
+        <li>✓ ترجمه</li>
+        <li>✓ خلاصه‌سازی</li>
+      </ul>
+      <button onclick="choosePlan('حرفه‌ای')">
+        خرید اشتراک
+      </button>
+    </div>
+
+    <div class="plan special">
+      <h3>ویژه ⭐</h3>
+      <div class="price">۷۹۹,۰۰۰ تومان</div>
+      <ul>
+        <li>✓ استفاده گسترده</li>
+        <li>✓ تمام ابزارها</li>
+        <li>✓ OCR</li>
+        <li>✓ امکانات ویژه</li>
+      </ul>
+      <button onclick="choosePlan('ویژه')">
+        خرید اشتراک
+      </button>
+    </div>
+
+  </div>
+
+</main>
+
+<footer>
+  © ۲۰۲۶ یار هوشمند فارسی — تمامی حقوق محفوظ است.
+</footer>
+
+<div class="modal" id="loginModal">
+
+  <div class="modal-box">
+
+    <h2>🔐 ورود / ثبت‌نام</h2>
+
+    <input
+      type="text"
+      id="name"
+      placeholder="نام شما"
+    >
+
+    <input
+      type="email"
+      id="email"
+      placeholder="ایمیل"
+    >
+
+    <input
+      type="password"
+      id="password"
+      placeholder="رمز عبور"
+    >
+
+    <button onclick="registerUser()">
+      ثبت‌نام
+    </button>
+
+    <button class="close" onclick="closeLogin()">
+      بستن
+    </button>
+
+  </div>
+
+</div>
+
+<script>
+
+  let selectedTool = "دستیار هوش مصنوعی";
+
+  function selectTool(tool) {
+    selectedTool = tool;
+
+    document.getElementById("prompt").placeholder =
+      "در مورد «" + tool + "» درخواست خود را بنویسید...";
+
+    document.getElementById("prompt").focus();
+  }
+
+  function sendMessage() {
+
+    const input = document.getElementById("prompt");
+    const text = input.value.trim();
+
+    if (!text) {
+      alert("لطفاً پیام خود را وارد کنید.");
+      return;
+    }
+
+    const messages = document.getElementById("messages");
+
+    const userMessage = document.createElement("div");
+    userMessage.className = "message user";
+    userMessage.textContent = text;
+
+    messages.appendChild(userMessage);
+
+    input.value = "";
+
+    setTimeout(() => {
+
+      const botMessage = document.createElement("div");
+      botMessage.className = "message bot";
+
+      botMessage.textContent =
+        "درخواست شما دریافت شد. 🤖\n\n" +
+        "ابزار انتخاب‌شده: " + selectedTool +
+        "\n\n" +
+        "اتصال واقعی به هوش مصنوعی را در مرحله بعد فعال می‌کنیم.";
+
+      messages.appendChild(botMessage);
+
+      messages.scrollTop = messages.scrollHeight;
+
+    }, 500);
+  }
+
+  function choosePlan(plan) {
+
+    if (plan === "رایگان") {
+      alert("پلن رایگان فعال شد. 🌹");
+      return;
+    }
+
+    alert(
+      "پلن «" + plan +
+      "» انتخاب شد.\n\n" +
+      "در مرحله بعد پرداخت آنلاین با زرین‌پال را وصل می‌کنیم."
+    );
+  }
+
+  function openLogin() {
+    document.getElementById("loginModal").style.display = "flex";
+  }
+
+  function closeLogin() {
+    document.getElementById("loginModal").style.display = "none";
+  }
+
+  function registerUser() {
+
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!name || !email || !password) {
+      alert("لطفاً همه اطلاعات را وارد کنید.");
+      return;
+    }
+
+    alert(
+      "ثبت اطلاعات انجام شد. ✅\n\n" +
+      "ثبت‌نام واقعی را در مرحله بعد به پایگاه داده وصل می‌کنیم."
+    );
+
+    closeLogin();
+  }
+
+</script>
+
+</body>
+</html>
