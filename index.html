@@ -1,4 +1,3 @@
-
 const MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
 
 const CORS_HEADERS = {
@@ -6,6 +5,37 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Content-Type": "application/json; charset=UTF-8"
+};
+
+/* =========================
+   قیمت و محدودیت پلن‌ها
+========================= */
+
+const PLANS = {
+  "رایگان": {
+    price: 0,
+    aiLimit: 10
+  },
+
+  "پایه": {
+    price: 400000,
+    aiLimit: 500
+  },
+
+  "حرفه‌ای": {
+    price: 800000,
+    aiLimit: 1500
+  },
+
+  "پیشرفته": {
+    price: 1200000,
+    aiLimit: 4000
+  },
+
+  "ویژه": {
+    price: 2000000,
+    aiLimit: 10000
+  }
 };
 
 function json(data, status = 200) {
@@ -34,6 +64,10 @@ function randomString(length = 32) {
 function now() {
   return new Date().toISOString();
 }
+
+/* =========================
+   رمز عبور
+========================= */
 
 async function hashPassword(password, salt) {
   const encoder = new TextEncoder();
@@ -77,7 +111,12 @@ async function verifyPassword(password, salt, storedHash) {
   return hash === storedHash;
 }
 
+/* =========================
+   دیتابیس
+========================= */
+
 async function initDatabase(env) {
+
   await env.DB.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,14 +161,20 @@ async function initDatabase(env) {
       user_id INTEGER NOT NULL,
       plan TEXT NOT NULL,
       amount INTEGER DEFAULT 0,
-      status TEXT DEFAULT 'در انتظار',
+      status TEXT DEFAULT 'در انتظار پرداخت',
+      authority TEXT,
       created_at TEXT NOT NULL,
       expires_at TEXT
     );
   `);
 }
 
+/* =========================
+   احراز هویت
+========================= */
+
 function getToken(request) {
+
   const auth = request.headers.get("Authorization");
 
   if (!auth) {
@@ -144,6 +189,7 @@ function getToken(request) {
 }
 
 async function getUser(request, env) {
+
   const token = getToken(request);
 
   if (!token) {
@@ -161,7 +207,8 @@ async function getUser(request, env) {
       users.plan,
       users.status
     FROM sessions
-    JOIN users ON users.id = sessions.user_id
+    JOIN users
+      ON users.id = sessions.user_id
     WHERE sessions.token = ?
     LIMIT 1
   `)
@@ -173,9 +220,12 @@ async function getUser(request, env) {
   }
 
   if (new Date(session.expires_at) < new Date()) {
+
     await env.DB.prepare(
       "DELETE FROM sessions WHERE token = ?"
-    ).bind(token).run();
+    )
+      .bind(token)
+      .run();
 
     return null;
   }
@@ -183,19 +233,32 @@ async function getUser(request, env) {
   return session;
 }
 
+/* =========================
+   ثبت نام
+========================= */
+
 async function register(request, env) {
+
   const body = await request.json();
 
   const name = String(body.name || "").trim();
-  const email = String(body.email || "").trim().toLowerCase();
+
+  const email = String(body.email || "")
+    .trim()
+    .toLowerCase();
+
   const password = String(body.password || "");
 
   if (!name || !email || !password) {
-    return error("نام، ایمیل و رمز عبور الزامی است.");
+    return error(
+      "نام، ایمیل و رمز عبور الزامی است."
+    );
   }
 
   if (password.length < 6) {
-    return error("رمز عبور باید حداقل ۶ کاراکتر باشد.");
+    return error(
+      "رمز عبور باید حداقل ۶ کاراکتر باشد."
+    );
   }
 
   const emailRegex =
@@ -212,7 +275,10 @@ async function register(request, env) {
     .first();
 
   if (exists) {
-    return error("این ایمیل قبلاً ثبت شده است.", 409);
+    return error(
+      "این ایمیل قبلاً ثبت شده است.",
+      409
+    );
   }
 
   const passwordData =
@@ -222,7 +288,16 @@ async function register(request, env) {
 
   const result = await env.DB.prepare(`
     INSERT INTO users
-    (full_name, email, password_hash, password_salt, balance, plan, status, created_at)
+    (
+      full_name,
+      email,
+      password_hash,
+      password_salt,
+      balance,
+      plan,
+      status,
+      created_at
+    )
     VALUES (?, ?, ?, ?, 0, 'رایگان', 'فعال', ?)
   `)
     .bind(
@@ -238,13 +313,20 @@ async function register(request, env) {
 
   const token = randomString(32);
 
-  const expires = new Date(
-    Date.now() + 30 * 24 * 60 * 60 * 1000
-  ).toISOString();
+  const expires =
+    new Date(
+      Date.now() +
+      30 * 24 * 60 * 60 * 1000
+    ).toISOString();
 
   await env.DB.prepare(`
     INSERT INTO sessions
-    (user_id, token, created_at, expires_at)
+    (
+      user_id,
+      token,
+      created_at,
+      expires_at
+    )
     VALUES (?, ?, ?, ?)
   `)
     .bind(
@@ -259,6 +341,7 @@ async function register(request, env) {
     success: true,
     message: "ثبت‌نام با موفقیت انجام شد.",
     token,
+
     user: {
       id: userId,
       name,
@@ -269,17 +352,26 @@ async function register(request, env) {
   }, 201);
 }
 
+/* =========================
+   ورود
+========================= */
+
 async function login(request, env) {
+
   const body = await request.json();
 
-  const email = String(body.email || "")
-    .trim()
-    .toLowerCase();
+  const email =
+    String(body.email || "")
+      .trim()
+      .toLowerCase();
 
-  const password = String(body.password || "");
+  const password =
+    String(body.password || "");
 
   if (!email || !password) {
-    return error("ایمیل و رمز عبور الزامی است.");
+    return error(
+      "ایمیل و رمز عبور الزامی است."
+    );
   }
 
   const user = await env.DB.prepare(`
@@ -292,30 +384,44 @@ async function login(request, env) {
     .first();
 
   if (!user) {
-    return error("ایمیل یا رمز عبور اشتباه است.", 401);
+    return error(
+      "ایمیل یا رمز عبور اشتباه است.",
+      401
+    );
   }
 
-  const valid = await verifyPassword(
-    password,
-    user.password_salt,
-    user.password_hash
-  );
+  const valid =
+    await verifyPassword(
+      password,
+      user.password_salt,
+      user.password_hash
+    );
 
   if (!valid) {
-    return error("ایمیل یا رمز عبور اشتباه است.", 401);
+    return error(
+      "ایمیل یا رمز عبور اشتباه است.",
+      401
+    );
   }
 
   const token = randomString(32);
 
   const createdAt = now();
 
-  const expires = new Date(
-    Date.now() + 30 * 24 * 60 * 60 * 1000
-  ).toISOString();
+  const expires =
+    new Date(
+      Date.now() +
+      30 * 24 * 60 * 60 * 1000
+    ).toISOString();
 
   await env.DB.prepare(`
     INSERT INTO sessions
-    (user_id, token, created_at, expires_at)
+    (
+      user_id,
+      token,
+      created_at,
+      expires_at
+    )
     VALUES (?, ?, ?, ?)
   `)
     .bind(
@@ -330,6 +436,7 @@ async function login(request, env) {
     success: true,
     message: "ورود موفق بود.",
     token,
+
     user: {
       id: user.id,
       name: user.full_name,
@@ -340,30 +447,51 @@ async function login(request, env) {
   });
 }
 
+/* =========================
+   پروفایل
+========================= */
+
 async function profile(request, env) {
-  const user = await getUser(request, env);
+
+  const user =
+    await getUser(request, env);
 
   if (!user) {
-    return error("نشست شما معتبر نیست.", 401);
+    return error(
+      "نشست شما معتبر نیست.",
+      401
+    );
   }
+
+  const plan =
+    PLANS[user.plan] ||
+    PLANS["رایگان"];
 
   return json({
     success: true,
+
     user: {
       id: user.id,
       name: user.full_name,
       email: user.email,
       balance: user.balance,
       plan: user.plan,
-      status: user.status
+      status: user.status,
+      aiLimit: plan.aiLimit
     }
   });
 }
 
+/* =========================
+   خروج
+========================= */
+
 async function logout(request, env) {
+
   const token = getToken(request);
 
   if (token) {
+
     await env.DB.prepare(
       "DELETE FROM sessions WHERE token = ?"
     )
@@ -377,8 +505,44 @@ async function logout(request, env) {
   });
 }
 
+/* =========================
+   بررسی مصرف AI
+========================= */
+
+async function getAiUsage(env, userId) {
+
+  const start =
+    new Date();
+
+  start.setUTCDate(1);
+  start.setUTCHours(0, 0, 0, 0);
+
+  const result =
+    await env.DB.prepare(`
+      SELECT COUNT(*) AS total
+      FROM messages
+      WHERE user_id = ?
+      AND created_at >= ?
+    `)
+      .bind(
+        userId,
+        start.toISOString()
+      )
+      .first();
+
+  return Number(
+    result?.total || 0
+  );
+}
+
+/* =========================
+   هوش مصنوعی واقعی
+========================= */
+
 async function chat(request, env) {
-  const user = await getUser(request, env);
+
+  const user =
+    await getUser(request, env);
 
   if (!user) {
     return error(
@@ -387,51 +551,93 @@ async function chat(request, env) {
     );
   }
 
-  const body = await request.json();
+  const plan =
+    PLANS[user.plan] ||
+    PLANS["رایگان"];
 
-  const message = String(
-    body.message || body.prompt || ""
-  ).trim();
+  const usage =
+    await getAiUsage(
+      env,
+      user.id
+    );
 
-  const tool = String(
-    body.tool || "دستیار هوش مصنوعی"
-  );
+  if (usage >= plan.aiLimit) {
+
+    return error(
+      `سقف استفاده از هوش مصنوعی در پلن «${user.plan}» برای این ماه تمام شده است.`
+    );
+  }
+
+  const body =
+    await request.json();
+
+  const message =
+    String(
+      body.message ||
+      body.prompt ||
+      ""
+    ).trim();
+
+  const tool =
+    String(
+      body.tool ||
+      "دستیار هوش مصنوعی"
+    );
 
   if (!message) {
-    return error("پیام خالی است.");
+    return error(
+      "پیام خالی است."
+    );
   }
 
   if (message.length > 12000) {
-    return error("پیام بیش از حد طولانی است.");
+    return error(
+      "پیام بیش از حد طولانی است."
+    );
   }
 
   const systemPrompt = `
 تو «یار هوشمند فارسی» هستی.
-به زبان فارسی روان و محترمانه پاسخ بده.
-ابزار انتخاب‌شده: ${tool}
 
-اگر کاربر درخواست نوشتن، ترجمه،
-خلاصه‌سازی یا اصلاح متن دارد،
-مستقیماً نتیجه مفید ارائه کن.
+به زبان فارسی روان و محترمانه پاسخ بده.
+
+پلن کاربر:
+${user.plan}
+
+ابزار انتخاب‌شده:
+${tool}
+
+اگر کاربر درخواست نوشتن،
+ترجمه،
+خلاصه‌سازی،
+اصلاح متن،
+ایده‌پردازی
+یا سؤال عمومی دارد،
+مستقیماً پاسخ مفید بده.
+
+پاسخ را تا حد امکان دقیق و کاربردی ارائه کن.
 `;
 
-  const aiResponse = await env.AI.run(
-    MODEL,
-    {
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt
-        },
-        {
-          role: "user",
-          content: message
-        }
-      ],
-      max_tokens: 1200,
-      temperature: 0.6
-    }
-  );
+  const aiResponse =
+    await env.AI.run(
+      MODEL,
+      {
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ],
+
+        max_tokens: 1200,
+
+        temperature: 0.6
+      }
+    );
 
   const answer =
     aiResponse?.response ||
@@ -439,7 +645,12 @@ async function chat(request, env) {
 
   await env.DB.prepare(`
     INSERT INTO messages
-    (user_id, user_message, ai_response, created_at)
+    (
+      user_id,
+      user_message,
+      ai_response,
+      created_at
+    )
     VALUES (?, ?, ?, ?)
   `)
     .bind(
@@ -450,91 +661,209 @@ async function chat(request, env) {
     )
     .run();
 
+  const newUsage =
+    usage + 1;
+
   return json({
+
     success: true,
+
     response: answer,
-    tool
+
+    tool,
+
+    plan: user.plan,
+
+    usage: newUsage,
+
+    remaining:
+      Math.max(
+        0,
+        plan.aiLimit - newUsage
+      )
   });
 }
+
+/* =========================
+   تراکنش‌ها
+========================= */
 
 async function transactions(request, env) {
-  const user = await getUser(request, env);
+
+  const user =
+    await getUser(request, env);
 
   if (!user) {
-    return error("ابتدا وارد حساب شوید.", 401);
+    return error(
+      "ابتدا وارد حساب شوید.",
+      401
+    );
   }
 
-  const result = await env.DB.prepare(`
-    SELECT
-      id,
-      type,
-      amount,
-      description,
-      status,
-      created_at
-    FROM transactions
-    WHERE user_id = ?
-    ORDER BY id DESC
-    LIMIT 100
-  `)
-    .bind(user.id)
-    .all();
+  const result =
+    await env.DB.prepare(`
+      SELECT
+        id,
+        type,
+        amount,
+        description,
+        status,
+        created_at
+      FROM transactions
+      WHERE user_id = ?
+      ORDER BY id DESC
+      LIMIT 100
+    `)
+      .bind(user.id)
+      .all();
 
   return json({
     success: true,
-    transactions: result.results
+    transactions:
+      result.results
   });
 }
+
+/* =========================
+   ایجاد اشتراک
+========================= */
 
 async function subscription(request, env) {
-  const user = await getUser(request, env);
+
+  const user =
+    await getUser(request, env);
 
   if (!user) {
-    return error("ابتدا وارد حساب شوید.", 401);
+    return error(
+      "ابتدا وارد حساب شوید.",
+      401
+    );
   }
 
-  const body = await request.json();
+  const body =
+    await request.json();
 
-  const plan = String(body.plan || "");
+  const plan =
+    String(body.plan || "");
 
-  const prices = {
-    "حرفه‌ای": 399000,
-    "ویژه": 799000
-  };
-
-  if (!prices[plan]) {
-    return error("پلن اشتراک نامعتبر است.");
+  if (!PLANS[plan]) {
+    return error(
+      "پلن اشتراک نامعتبر است."
+    );
   }
 
-  const amount = prices[plan];
+  if (plan === "رایگان") {
+    return error(
+      "پلن رایگان نیاز به پرداخت ندارد."
+    );
+  }
 
-  const result = await env.DB.prepare(`
-    INSERT INTO subscriptions
-    (user_id, plan, amount, status, created_at)
-    VALUES (?, ?, ?, 'در انتظار پرداخت', ?)
-  `)
-    .bind(
-      user.id,
-      plan,
-      amount,
-      now()
-    )
-    .run();
+  const amount =
+    PLANS[plan].price;
+
+  const result =
+    await env.DB.prepare(`
+      INSERT INTO subscriptions
+      (
+        user_id,
+        plan,
+        amount,
+        status,
+        created_at
+      )
+      VALUES
+      (?, ?, ?, 'در انتظار پرداخت', ?)
+    `)
+      .bind(
+        user.id,
+        plan,
+        amount,
+        now()
+      )
+      .run();
+
+  const subscriptionId =
+    result.meta.last_row_id;
+
+  /*
+    مرحله بعدی:
+    درخواست پرداخت زرین‌پال
+  */
 
   return json({
+
     success: true,
-    subscription_id: result.meta.last_row_id,
+
+    subscription_id:
+      subscriptionId,
+
     plan,
+
     amount,
+
+    payment: {
+      provider: "ZarinPal",
+      status: "pending"
+    },
+
     message:
-      "اشتراک ایجاد شد. مرحله پرداخت زرین‌پال باید به این درخواست متصل شود."
+      "اشتراک ثبت شد و آماده پرداخت زرین‌پال است."
   });
 }
 
+/* =========================
+   لیست پلن‌ها
+========================= */
+
+async function plans() {
+
+  return json({
+    success: true,
+
+    plans: [
+      {
+        name: "رایگان",
+        price: 0,
+        aiLimit: 10
+      },
+
+      {
+        name: "پایه",
+        price: 400000,
+        aiLimit: 500
+      },
+
+      {
+        name: "حرفه‌ای",
+        price: 800000,
+        aiLimit: 1500
+      },
+
+      {
+        name: "پیشرفته",
+        price: 1200000,
+        aiLimit: 4000
+      },
+
+      {
+        name: "ویژه",
+        price: 2000000,
+        aiLimit: 10000
+      }
+    ]
+  });
+}
+
+/* =========================
+   Worker
+========================= */
+
 export default {
+
   async fetch(request, env) {
 
     if (request.method === "OPTIONS") {
+
       return new Response(null, {
         headers: CORS_HEADERS
       });
@@ -544,77 +873,161 @@ export default {
 
       await initDatabase(env);
 
-      const url = new URL(request.url);
-      const path = url.pathname;
+      const url =
+        new URL(request.url);
 
-      if (request.method === "GET" && path === "/") {
+      const path =
+        url.pathname;
+
+      /* وضعیت Worker */
+
+      if (
+        request.method === "GET" &&
+        path === "/"
+      ) {
+
         return json({
+
           success: true,
-          service: "یار هوشمند فارسی",
-          status: "online",
-          version: "1.0.0"
+
+          service:
+            "یار هوشمند فارسی",
+
+          status:
+            "online",
+
+          version:
+            "2.0.0",
+
+          payment:
+            "ZarinPal",
+
+          ai:
+            "Workers AI"
         });
       }
+
+      /* پلن‌ها */
+
+      if (
+        request.method === "GET" &&
+        path === "/api/plans"
+      ) {
+
+        return await plans();
+      }
+
+      /* ثبت نام */
 
       if (
         request.method === "POST" &&
         path === "/api/register"
       ) {
-        return await register(request, env);
+
+        return await register(
+          request,
+          env
+        );
       }
+
+      /* ورود */
 
       if (
         request.method === "POST" &&
         path === "/api/login"
       ) {
-        return await login(request, env);
+
+        return await login(
+          request,
+          env
+        );
       }
+
+      /* خروج */
 
       if (
         request.method === "POST" &&
         path === "/api/logout"
       ) {
-        return await logout(request, env);
+
+        return await logout(
+          request,
+          env
+        );
       }
+
+      /* پروفایل */
 
       if (
         request.method === "GET" &&
         path === "/api/profile"
       ) {
-        return await profile(request, env);
+
+        return await profile(
+          request,
+          env
+        );
       }
+
+      /* هوش مصنوعی */
 
       if (
         request.method === "POST" &&
         path === "/api/chat"
       ) {
-        return await chat(request, env);
+
+        return await chat(
+          request,
+          env
+        );
       }
+
+      /* تراکنش‌ها */
 
       if (
         request.method === "GET" &&
         path === "/api/transactions"
       ) {
-        return await transactions(request, env);
+
+        return await transactions(
+          request,
+          env
+        );
       }
+
+      /* اشتراک */
 
       if (
         request.method === "POST" &&
         path === "/api/subscription"
       ) {
-        return await subscription(request, env);
+
+        return await subscription(
+          request,
+          env
+        );
       }
 
-      return error("مسیر موردنظر پیدا نشد.", 404);
+      return error(
+        "مسیر موردنظر پیدا نشد.",
+        404
+      );
 
     } catch (err) {
 
       console.error(err);
 
       return json({
+
         success: false,
-        error: "خطای داخلی سرور",
-        detail: err?.message || "Unknown error"
+
+        error:
+          "خطای داخلی سرور",
+
+        detail:
+          err?.message ||
+          "Unknown error"
+
       }, 500);
     }
   }
